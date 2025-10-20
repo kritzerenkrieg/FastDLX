@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-  <OutputType>WinExe</OutputType>
-  <TargetFramework>net8.0</TargetFramework>
-  <Nullable>enable</Nullable>
-  <RuntimeIdentifiers>win-x64;linux-x64;osx-x64</RuntimeIdentifiers>
-  <PublishSingleFile>true</PublishSingleFile>
-  <SelfContained>true</SelfContained>
-  <PublishTrimmed>false</PublishTrimmed>
-  <SupportedOSPlatformVersion>6.2</SupportedOSPlatformVersion>
+    <OutputType>WinExe</OutputType>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RuntimeIdentifiers>win-x64;linux-x64;osx-x64</RuntimeIdentifiers>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>false</PublishTrimmed>
+    <SupportedOSPlatformVersion>6.2</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +27,7 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="SharpCompress" Version="0.41.0" />
     <PackageReference Include="System.IO.Abstractions" Version="22.0.16" />
   </ItemGroup>
 </Project>
