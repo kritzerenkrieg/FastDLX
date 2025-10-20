@@ -1,0 +1,71 @@
+# -----------------------------
+# .NET & Visual Studio
+# -----------------------------
+
+## Build directories
+bin/
+obj/
+out/
+
+## User-specific files
+*.user
+*.suo
+*.userprefs
+*.vspscc
+*.vssscc
+*.ncb
+*.sdf
+*.opensdf
+*.VC.db
+
+## Rider/JetBrains IDE
+.idea/
+*.iml
+
+## VS Code
+.vscode/
+
+## Resharper
+_ReSharper*/
+*.DotSettings.user
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+# NuGet v3
+project.lock.json
+project.fragment.lock.json
+
+## Dotnet local tools
+.tool/
+*.dotnet_tool.json
+
+## Avalonia / SkiaSharp caches
+*.skp
+*.pdb
+*.cache
+*.bak
+
+## Others
+*.log
+*.tmp
+*.swp
+
+# -----------------------------
+# OS-specific
+# -----------------------------
+
+# Windows thumbnail cache
+Thumbs.db
+ehthumbs.db
+
+# Windows recycle bin files
+$RECYCLE.BIN/
+
+# MacOS
+.DS_Store
+
+# Linux
+*.swp
