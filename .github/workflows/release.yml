@@ -31,12 +31,6 @@ jobs:
         echo "VERSION=$version" >> $env:GITHUB_OUTPUT
         echo "Building version: $version"
     
-    - name: Install WiX Toolset
-      shell: pwsh
-      run: |
-        dotnet tool install --global wix
-        wix extension add -g WixToolset.UI.wixext
-    
     - name: Build Single-File Executable
       shell: pwsh
       run: |
@@ -57,69 +51,62 @@ jobs:
           Write-Host "Single-file size: $([math]::Round($size, 2)) MB" -ForegroundColor Cyan
         }
     
-    - name: Build MSI Installer
-      shell: pwsh
-      run: |
-        .\build-msi.ps1 -Version "${{ steps.get_version.outputs.VERSION }}"
-    
     - name: Create Release Archives
       shell: pwsh
       run: |
-        # Create portable version zip
+        Write-Host "Creating release artifacts..." -ForegroundColor Yellow
+        
+        # Create release directory
         New-Item -ItemType Directory -Path ".\release" -Force | Out-Null
-        Compress-Archive -Path "bin\Release\net8.0\win-x64\publish\FastDLX.exe" `
-          -DestinationPath ".\release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip"
         
-        # Copy MSI to release folder
-        Copy-Item ".\installer\FastDLX-${{ steps.get_version.outputs.VERSION }}.msi" `
-          ".\release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi"
+        # Verify portable exe exists
+        $exePath = "bin\Release\net8.0\win-x64\publish\FastDLX.exe"
+        if (-not (Test-Path $exePath)) {
+          Write-Host "ERROR: Portable EXE not found at $exePath" -ForegroundColor Red
+          exit 1
+        }
         
-        # Copy certificate for users who want to install it
-        Copy-Item ".\installer\FastDLX.pfx" ".\release\FastDLX-Certificate.pfx"
+        # Create portable version zip
+        Write-Host "Creating portable ZIP..." -ForegroundColor Cyan
+        Compress-Archive -Path $exePath `
+          -DestinationPath ".\release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip" `
+          -Force
         
-        # Create installation instructions
-        $instructions = @"
-        # FastDLX Installation
-
-        ## Option 1: Portable Version
-        1. Download FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip
-        2. Extract FastDLX.exe to any folder
-        3. Run FastDLX.exe
-
-        ## Option 2: MSI Installer
-        1. Download FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi
-        2. Download FastDLX-Certificate.pfx (Password: FastDLX2025)
-        3. Double-click the PFX file and install the certificate to "Trusted Root Certification Authorities" 
-        4. Run the MSI installer
-
-        Note: The certificate is self-signed. For personal/testing use only.
+        # Verify and copy MSI to release folder
+        $msiSource = ".\installer\FastDLX-${{ steps.get_version.outputs.VERSION }}.msi"
+        $msiDest = ".\release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi"
         
-        ## What's New
-        See CHANGELOG.md for release notes.
-        "@
+        if (-not (Test-Path $msiSource)) {
+          Write-Host "ERROR: MSI not found at $msiSource" -ForegroundColor Red
+          Write-Host "Installer directory contents:" -ForegroundColor Yellow
+          Get-ChildItem ".\installer" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $_" }
+          exit 1
+        }
         
-        $instructions | Out-File -FilePath ".\release\INSTALL.txt" -Encoding UTF8
+        Write-Host "Copying MSI installer..." -ForegroundColor Cyan
+        Copy-Item $msiSource $msiDest
+        
+        # Verify and copy certificate
+        $certSource = ".\installer\FastDLX.pfx"
+        if (-not (Test-Path $certSource)) {
+          Write-Host "ERROR: Certificate not found at $certSource" -ForegroundColor Red
+          exit 1
+        }
+        
+        Write-Ho" -Encoding UTF8
         
         Write-Host "Release artifacts created:" -ForegroundColor Green
         Get-ChildItem ".\release" | ForEach-Object {
           $size = $_.Length / 1MB
           Write-Host "  $($_.Name) - $([math]::Round($size, 2)) MB" -ForegroundColor Cyan
         }
-    
-    - name: Verify release artifacts
-      shell: pwsh
-      run: |
-        Write-Host "Verifying release artifacts exist..." -ForegroundColor Yellow
-        $files = @(
-          "release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip",
-          "release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi",
-          "release/FastDLX-Certificate.pfx",
-          "release/INSTALL.txt"
-        )
+    Portable Version
+        1. Download FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip
+        2. Extract FastDLX.exe to any folder
+        3. Run FastDLX.exe
         
-        $allExist = $true
-        foreach ($file in $files) {
-          if (Test-Path $file) {
+        ## What's New
+        See the release notes below for changes in this version
             $size = (Get-Item $file).Length / 1MB
             Write-Host "✓ $file ($([math]::Round($size, 2)) MB)" -ForegroundColor Green
           } else {
@@ -144,9 +131,7 @@ jobs:
         body: |
           ## FastDLX v${{ steps.get_version.outputs.VERSION }}
           
-          Fast download manager for game servers with FastDL support.
-          
-          ### Download Options
+          Fast downoad Options
           - **Portable**: `FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip` - Extract and run, no installation needed
           - **Installer**: `FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi` - Windows installer with Start Menu shortcut
           
@@ -166,3 +151,14 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+INSTALL.txt
+        body: |
+          ## FastDLX v${{ steps.get_version.outputs.VERSION }}
+          
+          Fast download manager for game servers with FastDL support.
+          
+          ### Download
+          - **Portable**: `FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip` - Extract and run, no installation needed
+          
+          ### Installation
+          See `INSTALL.txt` for instructions
