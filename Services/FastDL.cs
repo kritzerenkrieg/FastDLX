@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using SharpCompress.Compressors.BZip2;
+using FastDLX.Models;
 
 namespace FastDLX.Services;
 
@@ -14,6 +15,8 @@ public class FastDlService
     private readonly string _logDir = Path.Combine(AppContext.BaseDirectory, "Logs");
     private readonly string _logFile;
     private readonly string _tempExtension = ".fdltemp"; // temporary file extension
+    private int _totalFiles;
+    private int _completedFiles;
 
     public FastDlService()
     {
@@ -32,47 +35,116 @@ public class FastDlService
         }
     }
 
-    public async Task SyncAsync(string baseUrl, string targetDir, IProgress<string>? progress = null, int retryCount = 3)
+    public async Task SyncAsync(string baseUrl, string targetDir, IProgress<DownloadProgress>? progress = null, int retryCount = 3, bool skipMaps = false)
     {
         try
         {
+            // Validate URL format
+            if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out Uri? uri) || 
+                (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            {
+                string err = "Invalid URL format. Please provide a valid HTTP/HTTPS URL.";
+                progress?.Report(new DownloadProgress { Message = err, Percentage = 0 });
+                Log(err);
+                return;
+            }
+
             if (!baseUrl.EndsWith('/')) baseUrl += '/';
             Directory.CreateDirectory(targetDir);
 
-            Log($"Starting sync: {baseUrl} -> {targetDir}");
-            progress?.Report("Starting sync...");
+            Log($"Starting sync: {baseUrl} -> {targetDir} (Skip Maps: {skipMaps})");
+            _totalFiles = 0;
+            _completedFiles = 0;
+            
+            // Quick scan to count files - shows progress so user knows it's working
+            progress?.Report(new DownloadProgress { Message = "Scanning server files...", Percentage = 0 });
+            await CountFiles(baseUrl, retryCount, skipMaps, progress);
+            
+            if (_totalFiles > 0)
+            {
+                progress?.Report(new DownloadProgress { Message = $"Found {_totalFiles} files. Starting download...", Percentage = 0 });
+                Log($"Scan complete: {_totalFiles} files found");
+            }
+            else
+            {
+                progress?.Report(new DownloadProgress { Message = "Scanning complete. Processing files...", Percentage = 0 });
+            }
 
-            await SyncDirectory(baseUrl, targetDir, progress, retryCount);
+            bool success = await SyncDirectory(baseUrl, targetDir, progress, retryCount, skipMaps);
 
-            progress?.Report("Sync completed!");
-            Log("Sync completed successfully.");
+            if (success)
+            {
+                progress?.Report(new DownloadProgress { Message = "Sync completed!", Percentage = 100 });
+                Log("Sync completed successfully.");
+            }
+            else
+            {
+                progress?.Report(new DownloadProgress { Message = "Sync failed - could not access server.", Percentage = 0 });
+                Log("Sync failed - server not accessible.");
+            }
         }
         catch (Exception ex)
         {
             string err = $"Sync failed: {ex.Message}";
-            progress?.Report(err);
+            progress?.Report(new DownloadProgress { Message = err, Percentage = 0 });
             Log(err);
         }
     }
 
-    private async Task SyncDirectory(string url, string localDir, IProgress<string>? progress, int retryCount)
+    private async Task<bool> SyncDirectory(string url, string localDir, IProgress<DownloadProgress>? progress, int retryCount, bool skipMaps)
     {
         string html;
         try
         {
-            html = await _client.GetStringAsync(url);
+            var response = await _client.GetAsync(url);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                string err = $"Failed to access URL: {url} (Status: {response.StatusCode})";
+                progress?.Report(new DownloadProgress { Message = err, Percentage = GetProgressPercentage() });
+                Log(err);
+                return false;
+            }
+            
+            html = await response.Content.ReadAsStringAsync();
+            
+            // Check if we got actual HTML content
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                string err = $"No content returned from URL: {url}";
+                progress?.Report(new DownloadProgress { Message = err, Percentage = GetProgressPercentage() });
+                Log(err);
+                return false;
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            string err = $"Network error accessing {url}: {ex.Message}";
+            progress?.Report(new DownloadProgress { Message = err, Percentage = GetProgressPercentage() });
+            Log(err);
+            return false;
         }
         catch (Exception ex)
         {
             string err = $"Failed to read URL: {url} ({ex.Message})";
-            progress?.Report(err);
+            progress?.Report(new DownloadProgress { Message = err, Percentage = GetProgressPercentage() });
             Log(err);
-            return;
+            return false;
         }
 
         var matches = Regex.Matches(html, "<a href=\"([^\"]+?)\">", RegexOptions.IgnoreCase);
+        
+        // Validate that we found at least some links (otherwise might not be a directory listing)
+        if (matches.Count == 0)
+        {
+            string warn = $"No files or folders found at {url} - may not be a valid FastDL directory";
+            progress?.Report(new DownloadProgress { Message = warn, Percentage = GetProgressPercentage() });
+            Log(warn);
+            return true; // Not necessarily an error, could be empty directory
+        }
 
         Directory.CreateDirectory(localDir);
+        bool allSucceeded = true;
 
         foreach (Match match in matches)
         {
@@ -85,13 +157,35 @@ public class FastDlService
             {
                 // Handle folder
                 string folderName = name.TrimEnd('/');
+                
+                // Skip maps folder if skipMaps is true
+                if (skipMaps && folderName.Equals("maps", StringComparison.OrdinalIgnoreCase))
+                {
+                    string skipMsg = $"⏭️ Skipping maps folder (Download Maps is disabled)";
+                    Log($"Skipping maps folder as requested");
+                    progress?.Report(new DownloadProgress { Message = skipMsg, Percentage = GetProgressPercentage() });
+                    continue;
+                }
+                
                 string localPath = Path.Combine(localDir, folderName);
-                await SyncDirectory(remotePath, localPath, progress, retryCount);
+                bool folderSuccess = await SyncDirectory(remotePath, localPath, progress, retryCount, skipMaps);
+                if (!folderSuccess) allSucceeded = false;
             }
             else
             {
                 // Handle file
                 string safeName = SanitizeFileName(name);
+                
+                // Skip map files if skipMaps is true (check if we're in maps directory or file is a .bsp/.bz2 map)
+                if (skipMaps && IsMapFile(safeName, localDir))
+                {
+                    string skipMsg = $"⏭️ Skipping map file: {safeName}";
+                    Log($"Skipping map file: {safeName}");
+                    _completedFiles++;
+                    progress?.Report(new DownloadProgress { Message = skipMsg, Percentage = GetProgressPercentage() });
+                    continue;
+                }
+                
                 string localPath = Path.Combine(localDir, safeName);
                 
                 // Special handling for .bz2 files - check if decompressed .bsp exists
@@ -99,6 +193,36 @@ public class FastDlService
                 {
                     string bspName = safeName.Substring(0, safeName.Length - 4); // Remove .bz2
                     string bspPath = Path.Combine(localDir, bspName);
+                    string bspTempPath = bspPath + _tempExtension;
+                    string bz2Path = bspPath + ".bz2";
+                    
+                    // Clean up any incomplete decompression from previous run
+                    if (File.Exists(bspTempPath))
+                    {
+                        Log($"Found incomplete decompression for {bspName}, cleaning up temp file...");
+                        File.Delete(bspTempPath);
+                    }
+                    
+                    // Check if we have a complete BZ2 file ready to decompress (from interrupted decompression)
+                    if (File.Exists(bz2Path) && !File.Exists(bspPath))
+                    {
+                        Log($"Found complete BZ2 file for {bspName}, attempting decompression...");
+                        progress?.Report(new DownloadProgress { Message = $"Resuming decompression of {bspName}...", Percentage = GetProgressPercentage() });
+                        
+                        try
+                        {
+                            await DecompressBz2File(bz2Path, bspTempPath);
+                            File.Move(bspTempPath, bspPath);
+                            File.Delete(bz2Path);
+                            Log($"Successfully decompressed existing {safeName}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"Failed to decompress existing BZ2: {ex.Message}, will re-download");
+                            if (File.Exists(bspTempPath)) File.Delete(bspTempPath);
+                            if (File.Exists(bz2Path)) File.Delete(bz2Path);
+                        }
+                    }
                     
                     // Only download if the decompressed BSP doesn't exist
                     if (!File.Exists(bspPath))
@@ -107,18 +231,52 @@ public class FastDlService
                     }
                     else
                     {
+                        string skipMsg = $"⏭️ Skipping {safeName} (decompressed file already exists)";
                         Log($"Skipping {safeName} - decompressed file {bspName} already exists");
+                        _completedFiles++;
+                        progress?.Report(new DownloadProgress { Message = skipMsg, Percentage = GetProgressPercentage() });
                     }
                 }
-                else if (!File.Exists(localPath))
+                else
                 {
-                    await DownloadFileWithResume(remotePath, localPath, safeName, progress, retryCount);
+                    // Regular file (not .bz2)
+                    if (!File.Exists(localPath))
+                    {
+                        await DownloadFileWithResume(remotePath, localPath, safeName, progress, retryCount);
+                    }
+                    else
+                    {
+                        string skipMsg = $"⏭️ Skipping {safeName} (already exists)";
+                        Log($"Skipping {safeName} - file already exists");
+                        _completedFiles++;
+                        progress?.Report(new DownloadProgress { Message = skipMsg, Percentage = GetProgressPercentage() });
+                    }
                 }
             }
         }
+        
+        return allSucceeded;
     }
 
-    private async Task DownloadAndDecompressBz2(string url, string finalBspPath, string displayName, IProgress<string>? progress, int retryCount)
+    private bool IsMapFile(string fileName, string currentDir)
+    {
+        // Check if we're in a maps directory
+        if (currentDir.Contains($"{Path.DirectorySeparatorChar}maps{Path.DirectorySeparatorChar}") ||
+            currentDir.EndsWith($"{Path.DirectorySeparatorChar}maps", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        
+        // Check if file is a .bsp file
+        if (fileName.EndsWith(".bsp", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        
+        return false;
+    }
+
+    private async Task DownloadAndDecompressBz2(string url, string finalBspPath, string displayName, IProgress<DownloadProgress>? progress, int retryCount)
     {
         string tempBz2Path = finalBspPath + ".bz2" + _tempExtension;
         string bz2Path = finalBspPath + ".bz2";
@@ -129,11 +287,11 @@ public class FastDlService
         {
             startByte = new FileInfo(tempBz2Path).Length;
             Log($"Resuming download of {displayName} from byte {startByte}");
-            progress?.Report($"Resuming {displayName} from {FormatBytes(startByte)}...");
+            progress?.Report(new DownloadProgress { Message = $"Resuming {displayName} from {FormatBytes(startByte)}...", Percentage = GetProgressPercentage() });
         }
         else
         {
-            progress?.Report($"Downloading {displayName}...");
+            progress?.Report(new DownloadProgress { Message = $"Downloading {displayName}...", Percentage = GetProgressPercentage() });
             Log($"Downloading {url} -> {finalBspPath} (will decompress)");
         }
 
@@ -161,7 +319,7 @@ public class FastDlService
                 }
 
                 // Download complete, now decompress
-                progress?.Report($"Decompressing {displayName}...");
+                progress?.Report(new DownloadProgress { Message = $"Decompressing {displayName}...", Percentage = GetProgressPercentage() });
                 Log($"Decompressing {displayName} to {Path.GetFileName(finalBspPath)}");
                 
                 // Move temp to bz2 path first
@@ -171,14 +329,29 @@ public class FastDlService
                 }
                 File.Move(tempBz2Path, bz2Path);
                 
-                // Decompress bz2 to bsp
-                await DecompressBz2File(bz2Path, finalBspPath);
+                // Decompress bz2 to temp bsp first (for safety)
+                string tempBspPath = finalBspPath + _tempExtension;
+                if (File.Exists(tempBspPath))
+                {
+                    File.Delete(tempBspPath);
+                }
                 
-                // Delete the compressed file after successful decompression
+                await DecompressBz2File(bz2Path, tempBspPath);
+                
+                // Decompression successful, move temp to final location
+                if (File.Exists(finalBspPath))
+                {
+                    File.Delete(finalBspPath);
+                }
+                File.Move(tempBspPath, finalBspPath);
+                
+                // Only delete the compressed file AFTER successful decompression and move
+                // This way if app crashes during decompression, we still have the .bz2 to retry
                 File.Delete(bz2Path);
                 
                 Log($"Successfully decompressed {displayName} to {Path.GetFileName(finalBspPath)}");
-                progress?.Report($"Completed {displayName}");
+                _completedFiles++;
+                progress?.Report(new DownloadProgress { Message = $"Completed {displayName}", Percentage = GetProgressPercentage() });
                 downloaded = true;
             }
             catch (Exception ex)
@@ -186,7 +359,7 @@ public class FastDlService
                 if (attempt == retryCount)
                 {
                     string err = $"Failed: {displayName} after {retryCount} attempts ({ex.Message})";
-                    progress?.Report(err);
+                    progress?.Report(new DownloadProgress { Message = err, Percentage = GetProgressPercentage() });
                     Log(err);
                     
                     // Keep the temp file for future resume
@@ -219,7 +392,7 @@ public class FastDlService
         await bz2Stream.CopyToAsync(outputStream);
     }
 
-    private async Task DownloadFileWithResume(string url, string localPath, string displayName, IProgress<string>? progress, int retryCount)
+    private async Task DownloadFileWithResume(string url, string localPath, string displayName, IProgress<DownloadProgress>? progress, int retryCount)
     {
         string tempPath = localPath + _tempExtension;
         long startByte = 0;
@@ -228,13 +401,7 @@ public class FastDlService
         if (File.Exists(tempPath))
         {
             startByte = new FileInfo(tempPath).Length;
-            Log($"Resuming download of {displayName} from byte {startByte}");
-            progress?.Report($"Resuming {displayName} from {FormatBytes(startByte)}...");
-        }
-        else
-        {
-            progress?.Report($"Downloading {displayName}...");
-            Log($"Downloading {url} -> {localPath}");
+            Log($"Found partial download of {displayName}, size: {FormatBytes(startByte)}");
         }
 
         bool downloaded = false;
@@ -242,8 +409,39 @@ public class FastDlService
         {
             try
             {
-                // Check if server supports range requests
+                // Check if server supports range requests and get total size
                 long? totalSize = await GetContentLength(url);
+                
+                if (!totalSize.HasValue)
+                {
+                    Log($"Server did not return content length for {displayName}, downloading without resume support");
+                }
+                else if (startByte > 0)
+                {
+                    if (startByte >= totalSize.Value)
+                    {
+                        // File is already complete or larger than expected
+                        Log($"Temp file size ({FormatBytes(startByte)}) >= total size ({FormatBytes(totalSize.Value)}), treating as complete");
+                        if (File.Exists(localPath))
+                        {
+                            File.Delete(localPath);
+                        }
+                        File.Move(tempPath, localPath);
+                        Log($"Downloaded {displayName}");
+                        downloaded = true;
+                        continue;
+                    }
+                    else
+                    {
+                        Log($"Resuming download of {displayName} from byte {startByte} / {totalSize.Value}");
+                        progress?.Report(new DownloadProgress { Message = $"Resuming {displayName} from {FormatBytes(startByte)}...", Percentage = GetProgressPercentage() });
+                    }
+                }
+                else
+                {
+                    progress?.Report(new DownloadProgress { Message = $"Downloading {displayName}...", Percentage = GetProgressPercentage() });
+                    Log($"Downloading {url} -> {localPath}");
+                }
                 
                 if (totalSize.HasValue && startByte > 0 && startByte < totalSize.Value)
                 {
@@ -268,6 +466,7 @@ public class FastDlService
                 File.Move(tempPath, localPath);
                 
                 Log($"Downloaded {displayName}");
+                _completedFiles++;
                 downloaded = true;
             }
             catch (Exception ex)
@@ -275,7 +474,7 @@ public class FastDlService
                 if (attempt == retryCount)
                 {
                     string err = $"Failed: {displayName} after {retryCount} attempts ({ex.Message})";
-                    progress?.Report(err);
+                    progress?.Report(new DownloadProgress { Message = err, Percentage = GetProgressPercentage() });
                     Log(err);
                     
                     // Keep the temp file for future resume
@@ -283,7 +482,7 @@ public class FastDlService
                 }
                 else
                 {
-                    Log($"Download attempt {attempt} failed for {displayName}, retrying...");
+                    Log($"Download attempt {attempt} failed for {displayName}: {ex.Message}, retrying...");
                     await Task.Delay(1000 * attempt); // exponential backoff
                     
                     // Update startByte for next attempt
@@ -310,12 +509,25 @@ public class FastDlService
         }
     }
 
-    private async Task DownloadRange(string url, string tempPath, long startByte, long totalSize, string displayName, IProgress<string>? progress)
+    private async Task DownloadRange(string url, string tempPath, long startByte, long totalSize, string displayName, IProgress<DownloadProgress>? progress)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Range = new RangeHeaderValue(startByte, null);
 
         using var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        
+        // Check if server actually supports range requests
+        if (response.StatusCode != System.Net.HttpStatusCode.PartialContent)
+        {
+            Log($"Server does not support range requests for {displayName} (got {response.StatusCode}), starting fresh download");
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+            await DownloadFull(url, tempPath, displayName, progress);
+            return;
+        }
+        
         response.EnsureSuccessStatusCode();
 
         using var contentStream = await response.Content.ReadAsStreamAsync();
@@ -333,13 +545,17 @@ public class FastDlService
             // Update progress occasionally
             if (totalRead % (1024 * 1024) < 8192) // Every ~1MB
             {
-                int percentage = (int)((totalRead * 100) / totalSize);
-                progress?.Report($"Downloading {displayName}... {percentage}% ({FormatBytes(totalRead)}/{FormatBytes(totalSize)})");
+                int filePercentage = (int)((totalRead * 100) / totalSize);
+                progress?.Report(new DownloadProgress 
+                { 
+                    Message = $"Downloading {displayName}... {filePercentage}% ({FormatBytes(totalRead)}/{FormatBytes(totalSize)})", 
+                    Percentage = GetProgressPercentage() 
+                });
             }
         }
     }
 
-    private async Task DownloadFull(string url, string tempPath, string displayName, IProgress<string>? progress)
+    private async Task DownloadFull(string url, string tempPath, string displayName, IProgress<DownloadProgress>? progress)
     {
         using var response = await _client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
         response.EnsureSuccessStatusCode();
@@ -360,8 +576,12 @@ public class FastDlService
             // Update progress occasionally
             if (totalSize.HasValue && totalRead % (1024 * 1024) < 8192) // Every ~1MB
             {
-                int percentage = (int)((totalRead * 100) / totalSize.Value);
-                progress?.Report($"Downloading {displayName}... {percentage}% ({FormatBytes(totalRead)}/{FormatBytes(totalSize.Value)})");
+                int filePercentage = (int)((totalRead * 100) / totalSize.Value);
+                progress?.Report(new DownloadProgress 
+                { 
+                    Message = $"Downloading {displayName}... {filePercentage}% ({FormatBytes(totalRead)}/{FormatBytes(totalSize.Value)})", 
+                    Percentage = GetProgressPercentage() 
+                });
             }
         }
     }
@@ -386,6 +606,77 @@ public class FastDlService
             name = name.Replace(c, '_');
         }
         return name;
+    }
+
+    private double GetProgressPercentage()
+    {
+        if (_totalFiles == 0)
+        {
+            // If we haven't counted yet or no files, show incremental progress
+            return Math.Min(95, _completedFiles * 5);
+        }
+        
+        // Show accurate percentage based on files completed
+        return Math.Min(100, (_completedFiles * 100.0) / _totalFiles);
+    }
+
+    private async Task CountFiles(string url, int retryCount, bool skipMaps, IProgress<DownloadProgress>? progress = null, int depth = 0)
+    {
+        try
+        {
+            var response = await _client.GetAsync(url);
+            if (!response.IsSuccessStatusCode) return;
+            
+            string html = await response.Content.ReadAsStringAsync();
+            var matches = Regex.Matches(html, "<a href=\"([^\"]+?)\">", RegexOptions.IgnoreCase);
+
+            foreach (Match match in matches)
+            {
+                string name = match.Groups[1].Value;
+                if (string.IsNullOrWhiteSpace(name) || name == "../") continue;
+
+                if (name.EndsWith("/"))
+                {
+                    string folderName = name.TrimEnd('/');
+                    if (skipMaps && folderName.Equals("maps", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    
+                    // Show which folder we're scanning (only for first few levels)
+                    if (depth < 3 && progress != null)
+                    {
+                        progress.Report(new DownloadProgress 
+                        { 
+                            Message = $"Scanning {folderName}/... ({_totalFiles} files so far)", 
+                            Percentage = 0 
+                        });
+                    }
+                    
+                    await CountFiles(url + name, retryCount, skipMaps, progress, depth + 1);
+                }
+                else
+                {
+                    string safeName = SanitizeFileName(name);
+                    if (skipMaps && IsMapFile(safeName, url))
+                        continue;
+                    
+                    _totalFiles++;
+                    
+                    // Update progress every 10 files so user sees activity
+                    if (_totalFiles % 10 == 0 && progress != null)
+                    {
+                        progress.Report(new DownloadProgress 
+                        { 
+                            Message = $"Scanning... found {_totalFiles} files", 
+                            Percentage = 0 
+                        });
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Ignore errors during counting
+        }
     }
 
     private void Log(string message)

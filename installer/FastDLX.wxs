@@ -1,0 +1,359 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="FastDLX" 
+           Version="1.0.0" 
+           Manufacturer="FastDLX Team" 
+           UpgradeCode="12345678-1234-1234-1234-123456789012"
+           Language="1033"
+           Codepage="1252">
+    
+    <SummaryInformation Description="FastDLX - Fast Download Manager" />
+    
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="ProductFeature" Title="FastDLX" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="ApplicationShortcut" />
+    </Feature>
+
+    <Property Id="ARPPRODUCTICON" Value="icon.ico" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/yourusername/fastdlx" />
+    
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value=".\installer\License.rtf" />
+
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="FastDLX" />
+    </StandardDirectory>
+    
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="FastDLX"/>
+    </StandardDirectory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="Component_1" Guid="96487D19-CC94-474C-84C6-E1334D146F02">
+        <File Id="File_1" Source=".\installer\publish\Avalonia.Base.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_2" Guid="970EF8ED-EA08-4C7C-ADC2-20237AD67567">
+        <File Id="File_2" Source=".\installer\publish\Avalonia.Controls.DataGrid.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_3" Guid="9591F6EA-71D0-4BC8-8A60-712D712A1EEA">
+        <File Id="File_3" Source=".\installer\publish\Avalonia.Controls.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_4" Guid="8AABF4CA-999E-45E7-A14E-6B4722D46CEF">
+        <File Id="File_4" Source=".\installer\publish\Avalonia.DesignerSupport.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_5" Guid="F811B795-8649-4E64-B669-2D7C05B155C6">
+        <File Id="File_5" Source=".\installer\publish\Avalonia.Desktop.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_6" Guid="47B8209B-E4A8-43D0-A5E3-ECD2F97C7BAD">
+        <File Id="File_6" Source=".\installer\publish\Avalonia.Dialogs.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_7" Guid="112912A5-F07F-4EA9-8AA4-CAF34F79052F">
+        <File Id="File_7" Source=".\installer\publish\Avalonia.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_8" Guid="24068D92-799F-4C8A-AF74-6C4A156CF3E2">
+        <File Id="File_8" Source=".\installer\publish\Avalonia.Fonts.Inter.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_9" Guid="044C905B-7855-4E59-A59B-094AD4EA441F">
+        <File Id="File_9" Source=".\installer\publish\Avalonia.Markup.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_10" Guid="0BA9808E-0BC9-49B2-A373-65011567F275">
+        <File Id="File_10" Source=".\installer\publish\Avalonia.Markup.Xaml.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_11" Guid="D35E54E2-6004-49A5-AD0A-4FE666ECBDB1">
+        <File Id="File_11" Source=".\installer\publish\Avalonia.Metal.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_12" Guid="C73E8A4B-87B9-4BBD-A1CB-BE2D2E945AB0">
+        <File Id="File_12" Source=".\installer\publish\Avalonia.MicroCom.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_13" Guid="4800EB50-C8A8-4AD4-9B7E-DC3CBB39C76F">
+        <File Id="File_13" Source=".\installer\publish\Avalonia.OpenGL.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_14" Guid="1DE500C4-3870-4276-9962-801DB26E4CF1">
+        <File Id="File_14" Source=".\installer\publish\Avalonia.Remote.Protocol.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_15" Guid="0E9138AB-DB9A-4EB2-B589-12547E4746A5">
+        <File Id="File_15" Source=".\installer\publish\Avalonia.Skia.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_16" Guid="28D6D08B-7367-4D27-8F87-E9F000BDEC42">
+        <File Id="File_16" Source=".\installer\publish\Avalonia.Themes.Fluent.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_17" Guid="51A70F27-AD98-44C2-BBE8-D354E664AACF">
+        <File Id="File_17" Source=".\installer\publish\Avalonia.Vulkan.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_18" Guid="9454AA3D-DD54-4980-A37E-C6459F850AD7">
+        <File Id="File_18" Source=".\installer\publish\Avalonia.Win32.Automation.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_19" Guid="A3DF5397-B075-48E5-8E77-A5B2F54573DC">
+        <File Id="File_19" Source=".\installer\publish\Avalonia.Win32.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_20" Guid="23F42DB6-C10B-4FBC-8055-297B4EDB9279">
+        <File Id="File_20" Source=".\installer\publish\av_libglesv2.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_21" Guid="4858710E-6108-4C72-B7CD-248B755D547D">
+        <File Id="File_21" Source=".\installer\publish\clretwrc.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_22" Guid="DEF91016-8067-4AA8-9436-1EC43C072702">
+        <File Id="File_22" Source=".\installer\publish\clrgc.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_23" Guid="5D591A01-01A8-49AD-97EE-0875EDCC483D">
+        <File Id="File_23" Source=".\installer\publish\clrjit.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_24" Guid="EAD04093-2566-480F-A3E6-792389441FD4">
+        <File Id="File_24" Source=".\installer\publish\CommunityToolkit.Mvvm.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_25" Guid="E740FC1F-7EDE-4974-8926-BF07DE803690">
+        <File Id="File_25" Source=".\installer\publish\coreclr.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_26" Guid="B0FD5869-DD08-4859-A30B-67A9B9994682">
+        <File Id="File_26" Source=".\installer\publish\createdump.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_27" Guid="619064C6-DE36-40BD-BA8B-A9B6225034A6">
+        <File Id="File_27" Source=".\installer\publish\FastDLX.deps.json" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_28" Guid="68F26EDA-9342-4677-A82C-E3FE823E1C9C">
+        <File Id="File_28" Source=".\installer\publish\FastDLX.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_29" Guid="2260004C-F982-43E8-88A6-86CD09E09E16">
+        <File Id="File_29" Source=".\installer\publish\FastDLX.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_30" Guid="86E93AF3-37FA-4601-8795-3384A4AB45CC">
+        <File Id="File_30" Source=".\installer\publish\FastDLX.runtimeconfig.json" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_31" Guid="1DDFFA56-9805-43D7-BF0C-1013F0CD88B4">
+        <File Id="File_31" Source=".\installer\publish\HarfBuzzSharp.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_32" Guid="2D062AB6-01A6-4C3C-AAEB-64E27EEC3D69">
+        <File Id="File_32" Source=".\installer\publish\hostfxr.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_33" Guid="2472CBBF-7ADB-42B6-83A3-0605850C5394">
+        <File Id="File_33" Source=".\installer\publish\hostpolicy.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_34" Guid="7C912664-6F06-4F7B-87ED-106F436A57DE">
+        <File Id="File_34" Source=".\installer\publish\libHarfBuzzSharp.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_35" Guid="E57241B1-EB4E-4C89-BF29-8425A974907E">
+        <File Id="File_35" Source=".\installer\publish\libSkiaSharp.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_36" Guid="807BCD44-B207-4C6F-9BD6-921789FCA36C">
+        <File Id="File_36" Source=".\installer\publish\MicroCom.Runtime.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_37" Guid="EBD50367-2520-45F6-AB81-73EF385CCFD0">
+        <File Id="File_37" Source=".\installer\publish\Microsoft.DiaSymReader.Native.amd64.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_38" Guid="7B9F4A95-AC8C-4FCA-B0EF-33B0912FD350">
+        <File Id="File_38" Source=".\installer\publish\Microsoft.Win32.Registry.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_39" Guid="63C4558C-1F9A-4F06-8EEF-0F92BFCE63D0">
+        <File Id="File_39" Source=".\installer\publish\mscordaccore.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_40" Guid="48D74F89-3DCF-4EFB-886E-1A9CAE2EF0A3">
+        <File Id="File_40" Source=".\installer\publish\mscordaccore_amd64_amd64_8.0.2125.47513.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_41" Guid="F9166AFF-308A-40EF-A0AC-E081D0A0B62F">
+        <File Id="File_41" Source=".\installer\publish\mscordbi.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_42" Guid="E6BDA086-1D6B-4CF1-B844-2070531AA30D">
+        <File Id="File_42" Source=".\installer\publish\mscorrc.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_43" Guid="E93297D5-4632-4092-8A39-02A978C88312">
+        <File Id="File_43" Source=".\installer\publish\msquic.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_44" Guid="E6E7ADEA-28E2-4BCD-B832-06FA44E277F8">
+        <File Id="File_44" Source=".\installer\publish\netstandard.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_45" Guid="63BA498D-C231-4287-BB62-E9F6009EEBF7">
+        <File Id="File_45" Source=".\installer\publish\SharpCompress.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_46" Guid="74599356-2B1A-4E35-9149-F44B62E3D76D">
+        <File Id="File_46" Source=".\installer\publish\SkiaSharp.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_47" Guid="A334E394-D18C-4EBE-82FE-9B56595D5498">
+        <File Id="File_47" Source=".\installer\publish\System.Collections.Concurrent.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_48" Guid="0245283E-D684-47DD-8671-B019CBC11ABC">
+        <File Id="File_48" Source=".\installer\publish\System.Collections.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_49" Guid="D6A0F6F6-6C91-48C0-8509-561A7D72104C">
+        <File Id="File_49" Source=".\installer\publish\System.Collections.Immutable.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_50" Guid="776B9C73-F531-4C74-BC01-E7A4EF02301E">
+        <File Id="File_50" Source=".\installer\publish\System.Collections.NonGeneric.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_51" Guid="EFE48D5B-BEC7-48E4-84F6-0B06A3E0C088">
+        <File Id="File_51" Source=".\installer\publish\System.Collections.Specialized.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_52" Guid="329BE3E6-3564-411D-818A-3D136A524AC8">
+        <File Id="File_52" Source=".\installer\publish\System.ComponentModel.Annotations.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_53" Guid="A178864E-7A45-46A0-820F-8A306B259216">
+        <File Id="File_53" Source=".\installer\publish\System.ComponentModel.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_54" Guid="1977C3A2-0F92-47E8-931F-E126DB7416C3">
+        <File Id="File_54" Source=".\installer\publish\System.ComponentModel.Primitives.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_55" Guid="AFF19F1A-B55A-43B5-928C-B4EA98756F2F">
+        <File Id="File_55" Source=".\installer\publish\System.ComponentModel.TypeConverter.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_56" Guid="EFFD8892-3AA1-44A2-8054-F818556FE0E8">
+        <File Id="File_56" Source=".\installer\publish\System.Console.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_57" Guid="C4DA623E-4F78-4BF8-81A5-F1E5C7AD8755">
+        <File Id="File_57" Source=".\installer\publish\System.Diagnostics.DiagnosticSource.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_58" Guid="CCDCCCA6-8C44-491F-8D32-6D44E81F5F87">
+        <File Id="File_58" Source=".\installer\publish\System.Diagnostics.FileVersionInfo.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_59" Guid="859B572E-E28A-429B-A445-587DA54A3AAA">
+        <File Id="File_59" Source=".\installer\publish\System.Diagnostics.StackTrace.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_60" Guid="0C6B3A2C-356F-4143-AC6A-C86E7B852D37">
+        <File Id="File_60" Source=".\installer\publish\System.Diagnostics.TraceSource.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_61" Guid="B10A0E84-7611-451D-A9BC-A1E777316A9F">
+        <File Id="File_61" Source=".\installer\publish\System.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_62" Guid="3AB8F717-C6F6-4EE2-8042-D96C40DA4F3A">
+        <File Id="File_62" Source=".\installer\publish\System.Formats.Asn1.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_63" Guid="DCB714D3-E8CB-494D-869B-A540C5EDF661">
+        <File Id="File_63" Source=".\installer\publish\System.IO.Abstractions.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_64" Guid="75DA345E-C14D-43AA-A532-8EDA9425931D">
+        <File Id="File_64" Source=".\installer\publish\System.IO.Compression.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_65" Guid="413033DF-E53F-4F72-9515-2D0C4CDCA10F">
+        <File Id="File_65" Source=".\installer\publish\System.IO.Compression.Native.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_66" Guid="E6F81C26-C243-472D-82D7-7602C7A28AA2">
+        <File Id="File_66" Source=".\installer\publish\System.IO.FileSystem.AccessControl.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_67" Guid="B490D2B4-A7A1-49F4-ADD6-A6F169E11F97">
+        <File Id="File_67" Source=".\installer\publish\System.IO.FileSystem.DriveInfo.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_68" Guid="388F68E1-0BCB-42EB-B13D-6D13D11A7286">
+        <File Id="File_68" Source=".\installer\publish\System.IO.FileSystem.Watcher.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_69" Guid="58D60BDD-2276-4521-9887-6A847E316193">
+        <File Id="File_69" Source=".\installer\publish\System.IO.MemoryMappedFiles.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_70" Guid="F87DFE0D-71BF-4C08-A1F5-6720A78567FA">
+        <File Id="File_70" Source=".\installer\publish\System.Linq.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_71" Guid="5F0383E5-BB54-4BF5-8494-929F593FDC36">
+        <File Id="File_71" Source=".\installer\publish\System.Linq.Expressions.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_72" Guid="41111CE6-A33F-4A4C-83FC-3220993DBCF9">
+        <File Id="File_72" Source=".\installer\publish\System.Memory.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_73" Guid="A22EBFFB-9BEA-4D1A-A5BB-6CB27EB5F0C3">
+        <File Id="File_73" Source=".\installer\publish\System.Net.Http.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_74" Guid="A33AFE1D-DEA6-42AA-BF2F-60BDA7CC6EA5">
+        <File Id="File_74" Source=".\installer\publish\System.Net.NameResolution.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_75" Guid="B2A071AC-6242-41AF-AD69-48E6197DC7D4">
+        <File Id="File_75" Source=".\installer\publish\System.Net.NetworkInformation.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_76" Guid="91537D84-08F9-4F44-A944-028F6E4BE0EB">
+        <File Id="File_76" Source=".\installer\publish\System.Net.Primitives.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_77" Guid="E9C22EEF-F11F-4D6F-ABB9-638D8AA65FBF">
+        <File Id="File_77" Source=".\installer\publish\System.Net.Quic.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_78" Guid="F3963D25-2726-4674-B00C-37B6498B6DC8">
+        <File Id="File_78" Source=".\installer\publish\System.Net.Security.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_79" Guid="85D95BD3-C3F5-4185-9A13-25E9E422771D">
+        <File Id="File_79" Source=".\installer\publish\System.Net.Sockets.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_80" Guid="A6BA0275-D0A7-4317-9FD2-DFC21996F459">
+        <File Id="File_80" Source=".\installer\publish\System.ObjectModel.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_81" Guid="8B2DA4A1-7475-41FB-AA12-A0D301895379">
+        <File Id="File_81" Source=".\installer\publish\System.Private.CoreLib.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_82" Guid="00889317-FAF3-47C9-9953-0820DBE59865">
+        <File Id="File_82" Source=".\installer\publish\System.Private.Uri.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_83" Guid="A3BE2FED-E545-4F84-B095-9F4A807BC360">
+        <File Id="File_83" Source=".\installer\publish\System.Private.Xml.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_84" Guid="5B682E2F-1D25-4DAE-8B35-A9442925C3F0">
+        <File Id="File_84" Source=".\installer\publish\System.Reflection.Metadata.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_85" Guid="EA5DC2C7-1129-4186-A1CC-461B1EC73E6B">
+        <File Id="File_85" Source=".\installer\publish\System.Runtime.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_86" Guid="DF2BFC5D-FFD9-4F67-AD27-44B3A494B593">
+        <File Id="File_86" Source=".\installer\publish\System.Runtime.InteropServices.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_87" Guid="B4F8B77B-0385-412D-9197-1FFDB331FFF2">
+        <File Id="File_87" Source=".\installer\publish\System.Runtime.Intrinsics.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_88" Guid="527DA728-DB9E-4EC6-AFA1-8C727BEBB461">
+        <File Id="File_88" Source=".\installer\publish\System.Runtime.Numerics.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_89" Guid="44298D90-C9E7-4963-8D6D-822DCA8B368A">
+        <File Id="File_89" Source=".\installer\publish\System.Security.AccessControl.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_90" Guid="7691FB38-1604-4D4B-9C33-2FA66DEFB4FB">
+        <File Id="File_90" Source=".\installer\publish\System.Security.Claims.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_91" Guid="748FE0D8-4007-4F81-800E-98307C6C11C7">
+        <File Id="File_91" Source=".\installer\publish\System.Security.Cryptography.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_92" Guid="58CB8833-3154-46BA-8E94-4E593A41CC4D">
+        <File Id="File_92" Source=".\installer\publish\System.Security.Principal.Windows.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_93" Guid="C825ECC5-9D5A-4134-97B4-408586CEE201">
+        <File Id="File_93" Source=".\installer\publish\System.Text.Encodings.Web.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_94" Guid="76E9013E-9391-4608-9314-B84A5FCAECD3">
+        <File Id="File_94" Source=".\installer\publish\System.Text.Json.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_95" Guid="3BE71140-7810-4D43-B428-06AC6C82C444">
+        <File Id="File_95" Source=".\installer\publish\System.Text.RegularExpressions.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_96" Guid="9F1C0245-67AF-4727-A07B-B44EEB88E28C">
+        <File Id="File_96" Source=".\installer\publish\System.Threading.Channels.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_97" Guid="D8358389-16EC-49AF-A933-A313B5B75959">
+        <File Id="File_97" Source=".\installer\publish\System.Threading.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_98" Guid="58748F1B-59E8-4C8C-8C78-99EE95386D8A">
+        <File Id="File_98" Source=".\installer\publish\System.Threading.Thread.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_99" Guid="3B4BB2EC-C427-4000-847E-D3D1769ECCB5">
+        <File Id="File_99" Source=".\installer\publish\TestableIO.System.IO.Abstractions.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_100" Guid="572E7B5F-AD9E-45CA-BAAF-ED260046175A">
+        <File Id="File_100" Source=".\installer\publish\TestableIO.System.IO.Abstractions.Wrappers.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_101" Guid="74D91B2C-9522-4548-8ADD-9B406BB55459">
+        <File Id="File_101" Source=".\installer\publish\Testably.Abstractions.FileSystem.Interface.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="Component_102" Guid="C2073095-9434-4701-A132-012A7A825989">
+        <File Id="File_102" Source=".\installer\publish\ZstdSharp.dll" KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+
+    <Component Id="ApplicationShortcut" Directory="ApplicationProgramsFolder" Guid="AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE">
+      <Shortcut Id="ApplicationStartMenuShortcut"
+                Name="FastDLX"
+                Description="Fast Download Manager"
+                Target="[INSTALLFOLDER]FastDLX.exe"
+                WorkingDirectory="INSTALLFOLDER"/>
+      <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall"/>
+      <RegistryValue Root="HKCU" Key="Software\FastDLX" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+    </Component>
+  </Fragment>
+</Wix>

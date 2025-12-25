@@ -3,23 +3,131 @@
         xmlns:d="https://github.com/avaloniaui"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:FastDLX.ViewModels"
+        xmlns:model="clr-namespace:FastDLX.Models"
         x:Class="FastDLX.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
         Title="FastDLX Updater"
-        Width="500" Height="320">
+        Width="640" Height="656">
 
     <StackPanel Margin="20" Spacing="10">
-        <TextBlock Text="FastDL Server URL:"/>
-        <TextBox Text="{Binding FastDlUrl}" Watermark="http://example.com/fastdl/" />
+        <TextBlock Text="FastDL Server URL:" FontWeight="SemiBold"/>
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBox Grid.Column="0" Text="{Binding FastDlUrl}" Watermark="http://example.com/fastdl/" />
+            <Button Grid.Column="1" Content="🌐 Servers" Command="{Binding ToggleServerListCommand}" 
+                    Margin="5,0,0,0" Width="100"/>
+        </Grid>
 
-        <TextBlock Text="Local Game Folder:"/>
-        <StackPanel Orientation="Horizontal" Spacing="5">
-            <TextBox Text="{Binding GameDirectory}" Width="350"/>
-            <Button Content="Browse" Command="{Binding BrowseCommand}"/>
-        </StackPanel>
+        <!-- Server Selection Panel -->
+        <Border IsVisible="{Binding IsServerListVisible}" 
+                BorderBrush="#2C5F7F" BorderThickness="2" 
+                CornerRadius="5" Padding="10" 
+                Background="#1E3A4F">
+            <StackPanel Spacing="8">
+                <TextBlock Text="Available FastDL Servers" 
+                           FontWeight="Bold" 
+                           Foreground="White"
+                           Margin="0,0,0,5"/>
+                
+                <ScrollViewer MaxHeight="150" Margin="0,0,0,8">
+                    <ItemsControl ItemsSource="{Binding SavedServers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:MainWindowViewModel+FastDlServer">
+                                <Border BorderBrush="#3A5F7F" 
+                                        BorderThickness="0,0,0,1" 
+                                        Padding="8"
+                                        Margin="0,0,8,0">
+                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding Name}" 
+                                                       FontWeight="SemiBold"
+                                                       Foreground="White"/>
+                                            <TextBlock Text="{Binding Url}" 
+                                                       Foreground="#B0C4DE" 
+                                                       FontSize="11"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" 
+                                                Content="Select" 
+                                                Command="{Binding $parent[Window].DataContext.SelectServerCommand}"
+                                                CommandParameter="{Binding}"
+                                                Margin="5,0"
+                                                Background="#2C5F7F"
+                                                Foreground="White"/>
+                                        <Button Grid.Column="2" 
+                                                Content="✎" 
+                                                Command="{Binding $parent[Window].DataContext.RenameServerCommand}"
+                                                CommandParameter="{Binding}"
+                                                IsVisible="{Binding !IsDefault}"
+                                                Width="30"
+                                                Background="#4A7F9F"
+                                                Foreground="White"
+                                                ToolTip.Tip="Rename server"
+                                                Margin="0,0,5,0"/>
+                                        <Button Grid.Column="3" 
+                                                Content="✕" 
+                                                Command="{Binding $parent[Window].DataContext.RemoveServerCommand}"
+                                                CommandParameter="{Binding}"
+                                                IsVisible="{Binding !IsDefault}"
+                                                Width="30"
+                                                Background="#8B0000"
+                                                Foreground="White"
+                                                ToolTip.Tip="Remove server"
+                                                Margin="0,0,5,0"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
 
-        <Button Content="Update Files" Command="{Binding StartUpdateCommand}" Margin="0,10,0,0"/>
-        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}"/>
-        <TextBlock Text="{Binding Status}" Foreground="Gray"/>
+                <Button Content="➕ Add Current URL as Custom Server" 
+                        Command="{Binding AddCustomServerCommand}"
+                        HorizontalAlignment="Stretch"
+                        Background="#2C5F7F"
+                        Foreground="White"
+                        BorderBrush="#4A7F9F"
+                        BorderThickness="2"
+                        Padding="8,6"/>
+            </StackPanel>
+        </Border>
+
+        <TextBlock Text="Local Game Folder:" FontWeight="SemiBold" Margin="0,10,0,0"/>
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBox Grid.Column="0" Text="{Binding GameDirectory}" 
+                     Watermark="e.g., C:\...\cstrike\download"/>
+            <Button Grid.Column="1" Content="📁 Browse" 
+                    Command="{Binding BrowseCommand}" 
+                    Margin="5,0,0,0" Width="100"/>
+        </Grid>
+
+        <!-- Warning message -->
+        <TextBlock Text="{Binding Warning}" 
+                   Foreground="Orange"
+                   TextWrapping="Wrap"
+                   Margin="0,5,0,0"
+                   IsVisible="{Binding HasWarning}"/>
+
+        <!-- Download Maps Option -->
+        <CheckBox IsChecked="{Binding DownloadMaps}" 
+                  Content="Download Maps (Maps are large and optional)"
+                  Margin="0,10,0,0"
+                  ToolTip.Tip="Uncheck to skip downloading map files (.bsp) from the maps folder. This saves bandwidth as maps are typically very large."/>
+
+        <Button Content="Start FastDLX" 
+                Command="{Binding StartUpdateCommand}" 
+                Margin="0,0,0,0"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
+                Height="40"
+                FontSize="14"
+                FontWeight="SemiBold"/>
+        
+        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}" Height="20"/>
+        
+        <TextBlock Text="{Binding Status}" 
+                   Foreground="Gray" 
+                   TextWrapping="Wrap"
+                   FontSize="12"/>
     </StackPanel>
     
 </Window>

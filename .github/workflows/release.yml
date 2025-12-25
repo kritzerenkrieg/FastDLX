@@ -1,0 +1,143 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Extract version from tag
+      id: get_version
+      shell: pwsh
+      run: |
+        if ($env:GITHUB_REF -match 'refs/tags/v(.*)') {
+          $version = $matches[1]
+        } else {
+          $version = "1.0.0"
+        }
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+        echo "Building version: $version"
+    
+    - name: Install WiX Toolset
+      shell: pwsh
+      run: |
+        dotnet tool install --global wix
+        wix extension add -g WixToolset.UI.wixext
+    
+    - name: Build Single-File Executable
+      shell: pwsh
+      run: |
+        Write-Host "Building single-file executable..." -ForegroundColor Green
+        dotnet clean -c Release
+        dotnet restore
+        dotnet publish -c Release -r win-x64 `
+          --self-contained true `
+          /p:PublishSingleFile=true `
+          /p:PublishTrimmed=true `
+          /p:IncludeNativeLibrariesForSelfExtract=true `
+          /p:EnableCompressionInSingleFile=true `
+          /p:PublishReadyToRun=true `
+          /p:DebugType=none `
+          /p:DebugSymbols=false
+        
+        $exePath = "bin\Release\net8.0\win-x64\publish\FastDLX.exe"
+        if (Test-Path $exePath) {
+          $size = (Get-Item $exePath).Length / 1MB
+          Write-Host "Single-file size: $([math]::Round($size, 2)) MB" -ForegroundColor Cyan
+        }
+    
+    - name: Build MSI Installer
+      shell: pwsh
+      run: |
+        .\build-msi.ps1 -Version "${{ steps.get_version.outputs.VERSION }}"
+    
+    - name: Create Release Archives
+      shell: pwsh
+      run: |
+        # Create portable version zip
+        New-Item -ItemType Directory -Path ".\release" -Force | Out-Null
+        Compress-Archive -Path "bin\Release\net8.0\win-x64\publish\FastDLX.exe" `
+          -DestinationPath ".\release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip"
+        
+        # Copy MSI to release folder
+        Copy-Item ".\installer\FastDLX-${{ steps.get_version.outputs.VERSION }}.msi" `
+          ".\release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi"
+        
+        # Copy certificate for users who want to install it
+        Copy-Item ".\installer\FastDLX.pfx" ".\release\FastDLX-Certificate.pfx"
+        
+        # Create installation instructions
+        $instructions = @"
+        # FastDLX Installation
+
+        ## Option 1: Portable Version
+        1. Download FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip
+        2. Extract FastDLX.exe to any folder
+        3. Run FastDLX.exe
+
+        ## Option 2: MSI Installer
+        1. Download FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi
+        2. Download FastDLX-Certificate.pfx (Password: FastDLX2025)
+        3. Double-click the PFX file and install the certificate to "Trusted Root Certification Authorities" 
+        4. Run the MSI installer
+
+        Note: The certificate is self-signed. For personal/testing use only.
+        
+        ## What's New
+        See CHANGELOG.md for release notes.
+        "@
+        
+        $instructions | Out-File -FilePath ".\release\INSTALL.txt" -Encoding UTF8
+        
+        Write-Host "Release artifacts created:" -ForegroundColor Green
+        Get-ChildItem ".\release" | ForEach-Object {
+          $size = $_.Length / 1MB
+          Write-Host "  $($_.Name) - $([math]::Round($size, 2)) MB" -ForegroundColor Cyan
+        }
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip
+          release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi
+          release/FastDLX-Certificate.pfx
+          release/INSTALL.txt
+        body: |
+          ## FastDLX v${{ steps.get_version.outputs.VERSION }}
+          
+          Fast download manager for game servers with FastDL support.
+          
+          ### Download Options
+          - **Portable**: `FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip` - Extract and run, no installation needed
+          - **Installer**: `FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi` - Windows installer with Start Menu shortcut
+          
+          ### Installation
+          See `INSTALL.txt` for detailed instructions.
+          
+          **Note**: The MSI installer is signed with a self-signed certificate. You'll need to install `FastDLX-Certificate.pfx` (password: `FastDLX2025`) before running the installer.
+          
+          ### Features
+          - Resume interrupted downloads
+          - Automatic directory detection for Counter-Strike: Source
+          - Server presets and custom server support
+          - Optional map file downloads
+          - Progress tracking and logging
+          
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

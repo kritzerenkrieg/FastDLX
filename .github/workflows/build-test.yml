@@ -1,0 +1,48 @@
+name: Build Test
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Test build single-file executable
+      shell: pwsh
+      run: |
+        dotnet publish -c Release -r win-x64 `
+          --self-contained true `
+          /p:PublishSingleFile=true `
+          /p:PublishTrimmed=true `
+          /p:IncludeNativeLibrariesForSelfExtract=true `
+          /p:EnableCompressionInSingleFile=true `
+          /p:PublishReadyToRun=true `
+          /p:DebugType=none `
+          /p:DebugSymbols=false
+        
+        $exePath = "bin\Release\net8.0\win-x64\publish\FastDLX.exe"
+        if (Test-Path $exePath) {
+          $size = (Get-Item $exePath).Length / 1MB
+          Write-Host "✓ Build successful - Size: $([math]::Round($size, 2)) MB" -ForegroundColor Green
+        } else {
+          Write-Host "✗ Build failed - Executable not found" -ForegroundColor Red
+          exit 1
+        }
