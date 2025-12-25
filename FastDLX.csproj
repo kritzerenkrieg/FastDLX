@@ -21,13 +21,15 @@
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <PublishTrimmed>true</PublishTrimmed>
+    <PublishTrimmed>false</PublishTrimmed>
     <TrimMode>partial</TrimMode>
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>true</TieredCompilation>
     <SupportedOSPlatformVersion>6.2</SupportedOSPlatformVersion>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
+    <!-- Suppress warnings about trimming and nullable references -->
+    <NoWarn>$(NoWarn);IL2026;IL2111;CS8600;CS8601;CS8602;CS8603;CS8604;CS0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

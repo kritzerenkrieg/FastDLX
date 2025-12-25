@@ -111,10 +111,10 @@ jobs:
       run: |
         Write-Host "Verifying release artifacts exist..." -ForegroundColor Yellow
         $files = @(
-          "release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip",
-          "release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi",
-          "release\FastDLX-Certificate.pfx",
-          "release\INSTALL.txt"
+          "release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip",
+          "release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi",
+          "release/FastDLX-Certificate.pfx",
+          "release/INSTALL.txt"
         )
         
         $allExist = $true
@@ -137,10 +137,10 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip
-          release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi
-          release\FastDLX-Certificate.pfx
-          release\INSTALL.txt
+          release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip
+          release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi
+          release/FastDLX-Certificate.pfx
+          release/INSTALL.txt
         body: |
           ## FastDLX v${{ steps.get_version.outputs.VERSION }}
           
