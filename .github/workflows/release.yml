@@ -120,25 +120,26 @@ jobs:
           exit 1
         }
     
+    - name: Upload artifacts for debugging
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-artifacts
+        path: release/*
+    
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        files: |
-          release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip
-          release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi
-          release/FastDLX-Certificate.pfx
-          release/INSTALL.txt
+        files: release/*
         body: |
           ## FastDLX v${{ steps.get_version.outputs.VERSION }}
           
-          Fast downoad Options
+          Fast download manager for game servers with FastDL support.
+          
+          ### Download
           - **Portable**: `FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip` - Extract and run, no installation needed
-          - **Installer**: `FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi` - Windows installer with Start Menu shortcut
           
           ### Installation
-          See `INSTALL.txt` for detailed instructions.
-          
-          **Note**: The MSI installer is signed with a self-signed certificate. You'll need to install `FastDLX-Certificate.pfx` (password: `FastDLX2025`) before running the installer.
+          See `INSTALL.txt` for instructions.
           
           ### Features
           - Resume interrupted downloads
