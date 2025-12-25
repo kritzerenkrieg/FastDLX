@@ -46,10 +46,8 @@ jobs:
         dotnet publish -c Release -r win-x64 `
           --self-contained true `
           /p:PublishSingleFile=true `
-          /p:PublishTrimmed=true `
           /p:IncludeNativeLibrariesForSelfExtract=true `
           /p:EnableCompressionInSingleFile=true `
-          /p:PublishReadyToRun=true `
           /p:DebugType=none `
           /p:DebugSymbols=false
         
@@ -108,14 +106,41 @@ jobs:
           Write-Host "  $($_.Name) - $([math]::Round($size, 2)) MB" -ForegroundColor Cyan
         }
     
+    - name: Verify release artifacts
+      shell: pwsh
+      run: |
+        Write-Host "Verifying release artifacts exist..." -ForegroundColor Yellow
+        $files = @(
+          "release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip",
+          "release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi",
+          "release\FastDLX-Certificate.pfx",
+          "release\INSTALL.txt"
+        )
+        
+        $allExist = $true
+        foreach ($file in $files) {
+          if (Test-Path $file) {
+            $size = (Get-Item $file).Length / 1MB
+            Write-Host "✓ $file ($([math]::Round($size, 2)) MB)" -ForegroundColor Green
+          } else {
+            Write-Host "✗ $file (NOT FOUND)" -ForegroundColor Red
+            $allExist = $false
+          }
+        }
+        
+        if (-not $allExist) {
+          Write-Host "Some artifacts are missing!" -ForegroundColor Red
+          exit 1
+        }
+    
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: |
-          release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip
-          release/FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi
-          release/FastDLX-Certificate.pfx
-          release/INSTALL.txt
+          release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip
+          release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi
+          release\FastDLX-Certificate.pfx
+          release\INSTALL.txt
         body: |
           ## FastDLX v${{ steps.get_version.outputs.VERSION }}
           
