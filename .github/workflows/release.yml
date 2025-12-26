@@ -127,3 +127,40 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create Release Archives
+      shell: pwsh
+      run: |
+        Write-Host "Creating release artifacts..." -ForegroundColor Yellow
+        
+        # Create release directory
+        New-Item -ItemType Directory -Path ".\release" -Force | Out-Null
+        
+        # Verify portable exe exists
+        $exePath = "bin\Release\net8.0\win-x64\publish\FastDLX.exe"
+        if (-not (Test-Path $exePath)) {
+          Write-Host "ERROR: Portable EXE not found at $exePath" -ForegroundColor Red
+          Write-Host "Searching for exe files..." -ForegroundColor Yellow
+          Get-ChildItem -Path "bin" -Filter "*.exe" -Recurse | ForEach-Object {
+            Write-Host "Found: $($_.FullName)" -ForegroundColor Cyan
+          }
+          exit 1
+        }
+        
+        # Copy exe to release folder first
+        Copy-Item -Path $exePath -Destination ".\release\FastDLX.exe" -Force
+        
+        # Create portable version zip
+        Write-Host "Creating portable ZIP..." -ForegroundColor Cyan
+        Compress-Archive -Path ".\release\FastDLX.exe" `
+          -DestinationPath ".\release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip" `
+          -Force
+        
+        # Remove the copied exe (keep only zip)
+        Remove-Item ".\release\FastDLX.exe" -Force
+        
+        Write-Host "Release artifacts created:" -ForegroundColor Green
+        Get-ChildItem ".\release" | ForEach-Object {
+          $size = $_.Length / 1MB
+          Write-Host "  $($_.Name) - $([math]::Round($size, 2)) MB" -ForegroundColor Cyan
+        }
