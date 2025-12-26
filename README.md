@@ -6,6 +6,11 @@ A standalone FastDL client for Counter-Strike: Source that provides fast and rel
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)
 
+## Install
+
+Download the latest release from the [Releases page](https://github.com/kritzerenkrieg/FastDLX/releases), or download the application directly: [FastDLX.exe](https://github.com/kritzerenkrieg/FastDLX/releases/download/v1.0/FastDLX.exe)
+
+
 ## Overview
 
 ![Preview](https://raw.githubusercontent.com/kritzerenkrieg/FastDLX/refs/heads/master/Assets/preview.png)
@@ -41,15 +46,7 @@ FastDLX is an independent desktop application that allows you to download game c
 - Detailed status messages
 - Logging for troubleshooting
 
-## Installation
-
-### Portable Version (Recommended)
-
-1. Download the latest `FastDLX-v*.*.*-portable.zip` from the [Releases](../../releases) page
-2. Extract `FastDLX.exe` to any folder
-3. Run `FastDLX.exe` - no installation required!
-
-### Requirements
+### Requirements (For building/development)
 
 - Windows 10 or later (x64)
 - .NET 8.0 Runtime (included in portable version)
@@ -190,8 +187,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Contact
 
 - **Project**: FastDLX
-- **Company**: Kritzerenkrieg
-- **Developer**: M. Ken
+- **Developer**: Kritzerenkrieg
 
 ---
 
