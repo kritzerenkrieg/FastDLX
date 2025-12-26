@@ -72,51 +72,25 @@ jobs:
           -DestinationPath ".\release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip" `
           -Force
         
-        # Verify and copy MSI to release folder
-        $msiSource = ".\installer\FastDLX-${{ steps.get_version.outputs.VERSION }}.msi"
-        $msiDest = ".\release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-installer.msi"
-        
-        if (-not (Test-Path $msiSource)) {
-          Write-Host "ERROR: MSI not found at $msiSource" -ForegroundColor Red
-          Write-Host "Installer directory contents:" -ForegroundColor Yellow
-          Get-ChildItem ".\installer" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $_" }
-          exit 1
-        }
-        
-        Write-Host "Copying MSI installer..." -ForegroundColor Cyan
-        Copy-Item $msiSource $msiDest
-        
-        # Verify and copy certificate
-        $certSource = ".\installer\FastDLX.pfx"
-        if (-not (Test-Path $certSource)) {
-          Write-Host "ERROR: Certificate not found at $certSource" -ForegroundColor Red
-          exit 1
-        }
-        
-        Write-Ho" -Encoding UTF8
-        
         Write-Host "Release artifacts created:" -ForegroundColor Green
         Get-ChildItem ".\release" | ForEach-Object {
           $size = $_.Length / 1MB
           Write-Host "  $($_.Name) - $([math]::Round($size, 2)) MB" -ForegroundColor Cyan
         }
-    Portable Version
-        1. Download FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip
-        2. Extract FastDLX.exe to any folder
-        3. Run FastDLX.exe
+    
+    - name: Verify release files
+      shell: pwsh
+      run: |
+        Write-Host "Verifying release files..." -ForegroundColor Yellow
+        $expectedFile = ".\release\FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip"
         
-        ## What's New
-        See the release notes below for changes in this version
-            $size = (Get-Item $file).Length / 1MB
-            Write-Host "✓ $file ($([math]::Round($size, 2)) MB)" -ForegroundColor Green
-          } else {
-            Write-Host "✗ $file (NOT FOUND)" -ForegroundColor Red
-            $allExist = $false
-          }
-        }
-        
-        if (-not $allExist) {
-          Write-Host "Some artifacts are missing!" -ForegroundColor Red
+        if (Test-Path $expectedFile) {
+          $size = (Get-Item $expectedFile).Length / 1MB
+          Write-Host "✓ $expectedFile ($([math]::Round($size, 2)) MB)" -ForegroundColor Green
+        } else {
+          Write-Host "✗ $expectedFile (NOT FOUND)" -ForegroundColor Red
+          Write-Host "Release directory contents:" -ForegroundColor Yellow
+          Get-ChildItem ".\release" -ErrorAction SilentlyContinue
           exit 1
         }
     
@@ -139,7 +113,9 @@ jobs:
           - **Portable**: `FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip` - Extract and run, no installation needed
           
           ### Installation
-          See `INSTALL.txt` for instructions.
+          1. Download the portable ZIP file
+          2. Extract FastDLX.exe to any folder
+          3. Run FastDLX.exe
           
           ### Features
           - Resume interrupted downloads
@@ -147,19 +123,7 @@ jobs:
           - Server presets and custom server support
           - Optional map file downloads
           - Progress tracking and logging
-          
         draft: false
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-INSTALL.txt
-        body: |
-          ## FastDLX v${{ steps.get_version.outputs.VERSION }}
-          
-          Fast download manager for game servers with FastDL support.
-          
-          ### Download
-          - **Portable**: `FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip` - Extract and run, no installation needed
-          
-          ### Installation
-          See `INSTALL.txt` for instructions
