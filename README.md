@@ -8,6 +8,8 @@ A standalone FastDL client for Counter-Strike: Source that provides fast and rel
 
 ## Overview
 
+![Preview](https://raw.githubusercontent.com/kritzerenkrieg/FastDLX/refs/heads/master/Assets/preview.png)
+
 FastDLX is an independent desktop application that allows you to download game content (maps, materials, models, sounds, etc.) directly from FastDL servers without needing to connect to the game server first. This is particularly useful for:
 
 - Pre-downloading content before joining a server
@@ -103,18 +105,6 @@ cd FastDLX
 ```
 
 The executable will be in `bin\Release\net8.0\win-x64\publish\FastDLX.exe`
-
-#### MSI Installer (Optional)
-
-```powershell
-# Install WiX Toolset
-dotnet tool install --global wix
-
-# Run the MSI build script
-.\build-msi.ps1
-```
-
-The installer will be in `installer\FastDLX-1.0.0.msi`
 
 ### Manual Build
 
