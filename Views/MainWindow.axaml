@@ -7,13 +7,20 @@
         x:Class="FastDLX.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="FastDLX Updater"
-        Width="640" Height="656">
+        Width="640" Height="720">
 
     <StackPanel Margin="20" Spacing="10">
-        <TextBlock Text="FastDL Server URL:" FontWeight="SemiBold"/>
+        <!-- Game Selection -->
+        <TextBlock Text="Select Game:" FontWeight="SemiBold"/>
+        <ComboBox ItemsSource="{Binding AvailableGames}"
+                  SelectedItem="{Binding SelectedGame}"
+                  DisplayMemberBinding="{Binding Name}"
+                  HorizontalAlignment="Stretch"/>
+
+        <TextBlock Text="FastDL Server URL:" FontWeight="SemiBold" Margin="0,10,0,0"/>
         <Grid ColumnDefinitions="*,Auto">
             <TextBox Grid.Column="0" Text="{Binding FastDlUrl}" Watermark="http://example.com/fastdl/" />
-            <Button Grid.Column="1" Content="🌐 Servers" Command="{Binding ToggleServerListCommand}" 
+                <Button Grid.Column="1" Content="🌐 Servers" Command="{Binding ToggleServerListCommand}" 
                     Margin="5,0,0,0" Width="100"/>
         </Grid>
 
@@ -111,6 +118,12 @@
                   Content="Download Maps (Maps are large and optional)"
                   Margin="0,10,0,0"
                   ToolTip.Tip="Uncheck to skip downloading map files (.bsp) from the maps folder. This saves bandwidth as maps are typically very large."/>
+
+        <!-- Only Maps Option -->
+        <CheckBox IsChecked="{Binding OnlyMaps}" 
+                  Content="Only update maps (Skip all non-map content)"
+                  Margin="0,5,0,10"
+                  ToolTip.Tip="Check to only download files from the /maps folder and skip all other content. Useful for updating just maps."/>
 
         <Button Content="Start FastDLX" 
                 Command="{Binding StartUpdateCommand}" 

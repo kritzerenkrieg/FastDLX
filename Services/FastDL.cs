@@ -35,7 +35,7 @@ public class FastDlService
         }
     }
 
-    public async Task SyncAsync(string baseUrl, string targetDir, IProgress<DownloadProgress>? progress = null, int retryCount = 3, bool skipMaps = false)
+    public async Task SyncAsync(string baseUrl, string targetDir, IProgress<DownloadProgress>? progress = null, int retryCount = 3, bool skipMaps = false, bool onlyMaps = false)
     {
         try
         {
@@ -52,13 +52,13 @@ public class FastDlService
             if (!baseUrl.EndsWith('/')) baseUrl += '/';
             Directory.CreateDirectory(targetDir);
 
-            Log($"Starting sync: {baseUrl} -> {targetDir} (Skip Maps: {skipMaps})");
+            Log($"Starting sync: {baseUrl} -> {targetDir} (Skip Maps: {skipMaps}, Only Maps: {onlyMaps})");
             _totalFiles = 0;
             _completedFiles = 0;
             
             // Quick scan to count files - shows progress so user knows it's working
             progress?.Report(new DownloadProgress { Message = "Scanning server files...", Percentage = 0 });
-            await CountFiles(baseUrl, retryCount, skipMaps, progress);
+            await CountFiles(baseUrl, retryCount, skipMaps, onlyMaps, progress);
             
             if (_totalFiles > 0)
             {
@@ -70,7 +70,7 @@ public class FastDlService
                 progress?.Report(new DownloadProgress { Message = "Scanning complete. Processing files...", Percentage = 0 });
             }
 
-            bool success = await SyncDirectory(baseUrl, targetDir, progress, retryCount, skipMaps);
+            bool success = await SyncDirectory(baseUrl, targetDir, progress, retryCount, skipMaps, onlyMaps);
 
             if (success)
             {
@@ -91,7 +91,7 @@ public class FastDlService
         }
     }
 
-    private async Task<bool> SyncDirectory(string url, string localDir, IProgress<DownloadProgress>? progress, int retryCount, bool skipMaps)
+    private async Task<bool> SyncDirectory(string url, string localDir, IProgress<DownloadProgress>? progress, int retryCount, bool skipMaps, bool onlyMaps)
     {
         string html;
         try
@@ -167,8 +167,17 @@ public class FastDlService
                     continue;
                 }
                 
+                // Skip non-maps folders if onlyMaps is true
+                if (onlyMaps && !folderName.Equals("maps", StringComparison.OrdinalIgnoreCase))
+                {
+                    string skipMsg = $"⏭️ Skipping non-maps folder: {folderName} (Only Maps mode)";
+                    Log($"Skipping non-maps folder: {folderName}");
+                    progress?.Report(new DownloadProgress { Message = skipMsg, Percentage = GetProgressPercentage() });
+                    continue;
+                }
+                
                 string localPath = Path.Combine(localDir, folderName);
-                bool folderSuccess = await SyncDirectory(remotePath, localPath, progress, retryCount, skipMaps);
+                bool folderSuccess = await SyncDirectory(remotePath, localPath, progress, retryCount, skipMaps, onlyMaps);
                 if (!folderSuccess) allSucceeded = false;
             }
             else
@@ -181,6 +190,16 @@ public class FastDlService
                 {
                     string skipMsg = $"⏭️ Skipping map file: {safeName}";
                     Log($"Skipping map file: {safeName}");
+                    _completedFiles++;
+                    progress?.Report(new DownloadProgress { Message = skipMsg, Percentage = GetProgressPercentage() });
+                    continue;
+                }
+                
+                // Skip non-map files if onlyMaps is true
+                if (onlyMaps && !IsMapFile(safeName, localDir))
+                {
+                    string skipMsg = $"⏭️ Skipping non-map file: {safeName} (Only Maps mode)";
+                    Log($"Skipping non-map file: {safeName}");
                     _completedFiles++;
                     progress?.Report(new DownloadProgress { Message = skipMsg, Percentage = GetProgressPercentage() });
                     continue;
@@ -620,7 +639,7 @@ public class FastDlService
         return Math.Min(100, (_completedFiles * 100.0) / _totalFiles);
     }
 
-    private async Task CountFiles(string url, int retryCount, bool skipMaps, IProgress<DownloadProgress>? progress = null, int depth = 0)
+    private async Task CountFiles(string url, int retryCount, bool skipMaps, bool onlyMaps, IProgress<DownloadProgress>? progress = null, int depth = 0)
     {
         try
         {
@@ -641,6 +660,10 @@ public class FastDlService
                     if (skipMaps && folderName.Equals("maps", StringComparison.OrdinalIgnoreCase))
                         continue;
                     
+                    // Skip non-maps folders if onlyMaps is true
+                    if (onlyMaps && !folderName.Equals("maps", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    
                     // Show which folder we're scanning (only for first few levels)
                     if (depth < 3 && progress != null)
                     {
@@ -651,12 +674,16 @@ public class FastDlService
                         });
                     }
                     
-                    await CountFiles(url + name, retryCount, skipMaps, progress, depth + 1);
+                    await CountFiles(url + name, retryCount, skipMaps, onlyMaps, progress, depth + 1);
                 }
                 else
                 {
                     string safeName = SanitizeFileName(name);
                     if (skipMaps && IsMapFile(safeName, url))
+                        continue;
+                    
+                    // Skip non-map files if onlyMaps is true
+                    if (onlyMaps && !IsMapFile(safeName, url))
                         continue;
                     
                     _totalFiles++;

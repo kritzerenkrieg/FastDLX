@@ -14,6 +14,7 @@ namespace FastDLX.ViewModels;
 
 public partial class MainWindowViewModel : ObservableObject
 {
+    [ObservableProperty] private SourceGame selectedGame;
     [ObservableProperty] private string fastDlUrl = "https://fastdl.nide.gg/css_ze/";
     [ObservableProperty] private double progress;
     [ObservableProperty] private string gameDirectory = string.Empty;
@@ -22,6 +23,9 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private ObservableCollection<FastDlServer> savedServers = new();
     [ObservableProperty] private bool isServerListVisible = false;
     [ObservableProperty] private bool downloadMaps = false;
+    [ObservableProperty] private bool onlyMaps = false;
+
+    public ObservableCollection<SourceGame> AvailableGames { get; }
 
     public bool HasWarning => !string.IsNullOrWhiteSpace(Warning);
 
@@ -31,6 +35,18 @@ public partial class MainWindowViewModel : ObservableObject
 
     public MainWindowViewModel()
     {
+        // Initialize available games
+        AvailableGames = new ObservableCollection<SourceGame>
+        {
+            new SourceGame { Name = "Counter-Strike: Source", GameDir = "Counter-Strike Source", ModDir = "cstrike" },
+            new SourceGame { Name = "Counter-Strike: Global Offensive", GameDir = "Counter-Strike Global Offensive", ModDir = "csgo" },
+            new SourceGame { Name = "Team Fortress 2", GameDir = "Team Fortress 2", ModDir = "tf" },
+            new SourceGame { Name = "Garry's Mod", GameDir = "GarrysMod", ModDir = "garrysmod" }
+        };
+        
+        // Default to CS:Source
+        selectedGame = AvailableGames[0];
+
         string appDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FastDLX");
         Directory.CreateDirectory(appDataDir);
         _configPath = Path.Combine(appDataDir, "config.json");
@@ -38,7 +54,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         LoadServers();
         LoadConfig();
-        DetectCsSourceDirectory();
+        DetectGameDirectory();
     }
 
     partial void OnGameDirectoryChanged(string value)
@@ -49,6 +65,34 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnWarningChanged(string value)
     {
         OnPropertyChanged(nameof(HasWarning));
+    }
+
+    partial void OnOnlyMapsChanged(bool value)
+    {
+        // If OnlyMaps is checked, DownloadMaps must also be checked
+        if (value && !DownloadMaps)
+        {
+            DownloadMaps = true;
+        }
+    }
+
+    partial void OnDownloadMapsChanged(bool value)
+    {
+        // If DownloadMaps is unchecked, OnlyMaps must also be unchecked
+        if (!value && OnlyMaps)
+        {
+            OnlyMaps = false;
+        }
+    }
+
+    partial void OnSelectedGameChanged(SourceGame value)
+    {
+        // When game changes, clear current directory and re-detect for the new game
+        if (value != null)
+        {
+            GameDirectory = string.Empty;
+            DetectGameDirectory();
+        }
     }
 
     private void ValidateDownloadDirectory(string path)
@@ -64,7 +108,8 @@ public partial class MainWindowViewModel : ObservableObject
         
         if (!normalizedPath.EndsWith($"{Path.DirectorySeparatorChar}download", StringComparison.OrdinalIgnoreCase))
         {
-            Warning = "⚠️ Warning: Selected directory is not a 'download' folder. FastDL files should be synced to the game's download directory (e.g., cstrike\\download).";
+            string examplePath = SelectedGame != null ? $"{SelectedGame.ModDir}\\download" : "download";
+            Warning = $"⚠️ Warning: Selected directory is not a 'download' folder. FastDL files should be synced to the game's download directory (e.g., {examplePath}).";
         }
         else
         {
@@ -72,22 +117,25 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    private void DetectCsSourceDirectory()
+    private void DetectGameDirectory()
     {
         // Only auto-detect if game directory is empty
         if (!string.IsNullOrWhiteSpace(GameDirectory))
             return;
 
-        Status = "Searching for Counter-Strike: Source...";
+        if (SelectedGame == null)
+            return;
+
+        Status = $"Searching for {SelectedGame.Name}...";
 
         // Strategy 1: Check Windows Registry for Steam installation path
         string? steamPathFromRegistry = GetSteamPathFromRegistry();
         if (!string.IsNullOrEmpty(steamPathFromRegistry))
         {
-            if (TryFindCssInSteamPath(steamPathFromRegistry, out string? cssPath))
+            if (TryFindGameInSteamPath(steamPathFromRegistry, SelectedGame, out string? gamePath))
             {
-                GameDirectory = cssPath;
-                Status = "Auto-detected Counter-Strike: Source download directory";
+                GameDirectory = gamePath;
+                Status = $"Auto-detected {SelectedGame.Name} download directory";
                 return;
             }
         }
@@ -106,10 +154,10 @@ public partial class MainWindowViewModel : ObservableObject
 
         foreach (string steamPath in commonPaths)
         {
-            if (TryFindCssInSteamPath(steamPath, out string? cssPath))
+            if (TryFindGameInSteamPath(steamPath, SelectedGame, out string? gamePath))
             {
-                GameDirectory = cssPath;
-                Status = "Auto-detected Counter-Strike: Source download directory";
+                GameDirectory = gamePath;
+                Status = $"Auto-detected {SelectedGame.Name} download directory";
                 return;
             }
         }
@@ -127,16 +175,16 @@ public partial class MainWindowViewModel : ObservableObject
             
             foreach (string steamPath in steamFolders)
             {
-                if (TryFindCssInSteamPath(steamPath, out string? cssPath))
+                if (TryFindGameInSteamPath(steamPath, SelectedGame, out string? gamePath))
                 {
-                    GameDirectory = cssPath;
-                    Status = "Auto-detected Counter-Strike: Source download directory";
+                    GameDirectory = gamePath;
+                    Status = $"Auto-detected {SelectedGame.Name} download directory";
                     return;
                 }
             }
         }
 
-        Status = "Could not auto-detect CS:S directory. Please select manually.";
+        Status = $"Could not auto-detect {SelectedGame.Name} directory. Please select manually.";
     }
 
     private string? GetSteamPathFromRegistry()
@@ -218,19 +266,19 @@ public partial class MainWindowViewModel : ObservableObject
         return steamFolders;
     }
 
-    private bool TryFindCssInSteamPath(string steamPath, out string? cssDownloadPath)
+    private bool TryFindGameInSteamPath(string steamPath, SourceGame game, out string? gameDownloadPath)
     {
-        cssDownloadPath = null;
+        gameDownloadPath = null;
 
-        if (!Directory.Exists(steamPath))
+        if (!Directory.Exists(steamPath) || game == null)
             return false;
 
         // Check main steamapps location
-        string cssPath = Path.Combine(steamPath, "steamapps", "common", "Counter-Strike Source", "cstrike", "download");
+        string gamePath = Path.Combine(steamPath, "steamapps", "common", game.GameDir, game.ModDir, "download");
         
-        if (Directory.Exists(cssPath))
+        if (Directory.Exists(gamePath))
         {
-            cssDownloadPath = cssPath;
+            gameDownloadPath = gamePath;
             return true;
         }
 
@@ -242,11 +290,11 @@ public partial class MainWindowViewModel : ObservableObject
             
             foreach (string libraryPath in libraryPaths)
             {
-                string libCssPath = Path.Combine(libraryPath, "steamapps", "common", "Counter-Strike Source", "cstrike", "download");
+                string libGamePath = Path.Combine(libraryPath, "steamapps", "common", game.GameDir, game.ModDir, "download");
                 
-                if (Directory.Exists(libCssPath))
+                if (Directory.Exists(libGamePath))
                 {
-                    cssDownloadPath = libCssPath;
+                    gameDownloadPath = libGamePath;
                     return true;
                 }
             }
@@ -537,6 +585,17 @@ public partial class MainWindowViewModel : ObservableObject
                 {
                     FastDlUrl = config.FastDlUrl ?? string.Empty;
                     GameDirectory = config.GameDirectory ?? string.Empty;
+                    
+                    // Restore selected game
+                    if (!string.IsNullOrEmpty(config.SelectedGameName))
+                    {
+                        var game = AvailableGames.FirstOrDefault(g => g.Name == config.SelectedGameName);
+                        if (game != null)
+                        {
+                            SelectedGame = game;
+                        }
+                    }
+                    
                     Status = "Loaded previous configuration";
                 }
             }
@@ -554,7 +613,8 @@ public partial class MainWindowViewModel : ObservableObject
             var config = new Config
             {
                 FastDlUrl = FastDlUrl,
-                GameDirectory = GameDirectory
+                GameDirectory = GameDirectory,
+                SelectedGameName = SelectedGame?.Name
             };
 
             string json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
@@ -585,16 +645,17 @@ public partial class MainWindowViewModel : ObservableObject
             Progress = p.Percentage;
         });
 
-        // Pass DownloadMaps directly to service - let FastDlService handle the logic
-        await _service.SyncAsync(FastDlUrl, GameDirectory, progress, retryCount: 3, skipMaps: !DownloadMaps);
+        // Pass DownloadMaps and OnlyMaps to service - let FastDlService handle the logic
+        await _service.SyncAsync(FastDlUrl, GameDirectory, progress, retryCount: 3, skipMaps: !DownloadMaps, onlyMaps: OnlyMaps);
     }
 
     [RelayCommand]
     public async Task BrowseAsync()
     {
+        string examplePath = SelectedGame != null ? $"{SelectedGame.ModDir}\\download" : "download";
         var dlg = new OpenFolderDialog
         {
-            Title = "Select Game Download Directory (e.g., cstrike\\download)"
+            Title = $"Select Game Download Directory (e.g., {examplePath})"
         };
 
         // Open dialog (must pass Window)
@@ -617,6 +678,14 @@ public partial class MainWindowViewModel : ObservableObject
     {
         public string? FastDlUrl { get; set; }
         public string? GameDirectory { get; set; }
+        public string? SelectedGameName { get; set; }
+    }
+
+    public class SourceGame
+    {
+        public string Name { get; set; } = string.Empty;
+        public string GameDir { get; set; } = string.Empty;
+        public string ModDir { get; set; } = string.Empty;
     }
 
     public class FastDlServer
