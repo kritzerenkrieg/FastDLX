@@ -1,6 +1,6 @@
 # FastDLX
 
-A standalone FastDL client for Counter-Strike: Source that provides fast and reliable content downloads from game server FastDL repositories.
+A standalone FastDL client for Source games that provides fast and reliable content downloads from game server FastDL repositories.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)
