@@ -8,7 +8,7 @@ A standalone FastDL client for Counter-Strike: Source that provides fast and rel
 
 ## Install
 
-Download the latest release from the [Releases page](https://github.com/kritzerenkrieg/FastDLX/releases), or download the application directly: [FastDLX.exe](https://github.com/kritzerenkrieg/FastDLX/releases/download/v1.0/FastDLX.exe)
+Download the latest release from the [Releases page](https://github.com/kritzerenkrieg/FastDLX/releases), or download the application directly: [FastDLX.exe](https://github.com/kritzerenkrieg/FastDLX/releases/download/v1.1/FastDLX.exe)
 
 
 ## Overview
@@ -30,7 +30,7 @@ FastDLX is an independent desktop application that allows you to download game c
 - Optional map file downloads (saves bandwidth)
 
 🎮 **Game Integration**
-- Automatic Counter-Strike: Source directory detection
+- Automatic Source game directory detection
 - Proper file structure preservation
 - Compatible with standard FastDL server formats
 
@@ -46,35 +46,16 @@ FastDLX is an independent desktop application that allows you to download game c
 - Detailed status messages
 - Logging for troubleshooting
 
+## TODO
+- Only tested on CS:S, need to know if it works well in TF2, GMOD, etc.
+- L4D2 has different download method, not sure if i'd work on it.
+- Waiting for new suggestions, language support can wait.
+
 ### Requirements (For building/development)
 
 - Windows 10 or later (x64)
 - .NET 8.0 Runtime (included in portable version)
 - Internet connection
-
-## Usage
-
-### Quick Start
-
-1. **Launch FastDLX** - The application will attempt to auto-detect your CS:Source installation
-2. **Select a Server** - Click "🌐 Servers" to choose from presets or add a custom FastDL URL
-3. **Verify Paths** - Ensure the game directory points to your `cstrike\download` folder
-4. **Configure Options** - Uncheck "Download Maps" if you want to skip large map files
-5. **Start Download** - Click "Start FastDLX" and wait for the process to complete
-
-### Adding Custom Servers
-
-1. Paste a FastDL URL in the server URL field
-2. Click "🌐 Servers" to open the server list
-3. Click "➕ Add Current URL as Custom Server"
-4. Give your server a memorable name
-5. The server will be saved for future use
-
-### Managing Servers
-
-- **Select**: Click "Select" to use a server
-- **Rename**: Click "✎" to rename custom servers
-- **Remove**: Click "✕" to delete custom servers
 
 ### Map Downloads
 
@@ -129,7 +110,7 @@ FastDLX/
 └── README.md         # This file
 ```
 
-## Technology Stack
+## Development Stack
 
 - **Framework**: .NET 8.0
 - **UI**: [Avalonia UI](https://avaloniaui.net/) (Cross-platform XAML-based UI)
@@ -139,24 +120,20 @@ FastDLX/
 
 ## Troubleshooting
 
-### Application won't start
-- Ensure you're running Windows 10 x64 or later
-- Check that the executable isn't blocked (Right-click → Properties → Unblock)
-
 ### Can't find game directory
 - Manually browse to your CS:Source installation
 - The path should end with `cstrike\download`
 - Typical location: `C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Source\cstrike\download`
 
 ### Downloads are slow
-- This is limited by the FastDL server's bandwidth
-- Some servers may have rate limiting
-- Try a different FastDL server from the list
+- Limited by the FastDL server's bandwidth
+- Bad internet
+- Use VPN
 
 ### "Scanning files..." takes too long
 - The first scan counts all files on the server
 - This is normal and happens once per session
-- Progress updates every 10 files found
+- Update maps only if you use it frequently
 
 ### Check the logs
 Logs are stored in the `Logs\` folder next to the executable:
@@ -181,14 +158,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - Built with [Avalonia UI](https://avaloniaui.net/)
-- Icon and UI design inspired by modern download managers
+- Thanks to Chujoy for map only update suggestion (v1.1)
 - Thanks to the Counter-Strike: Source community
-
-## Contact
-
-- **Project**: FastDLX
-- **Developer**: Kritzerenkrieg
 
 ---
 
-**Note**: This is an independent client and is not affiliated with Valve Corporation or Counter-Strike: Source.
+**Note**: This is an independent client and is not affiliated with Valve Corporation.
