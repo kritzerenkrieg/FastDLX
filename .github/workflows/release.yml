@@ -70,6 +70,10 @@ jobs:
           exit 1
         }
         
+        # Copy standalone exe
+        Write-Host "Copying standalone EXE..." -ForegroundColor Cyan
+        Copy-Item -Path $exePath -Destination ".\release\FastDLX.exe" -Force
+        
         # Create portable version zip
         Write-Host "Creating portable ZIP..." -ForegroundColor Cyan
         Compress-Archive -Path $exePath `
@@ -114,12 +118,12 @@ jobs:
           Fast download manager for Source engine game servers with FastDL support.
           
           ### Download
-          - **Portable**: `FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip` - Extract and run, no installation needed
+          - **Direct EXE**: `FastDLX.exe` - Download and run directly, no extraction needed
+          - **ZIP Archive**: `FastDLX-v${{ steps.get_version.outputs.VERSION }}-portable.zip` - Compressed version
           
           ### Installation
-          1. Download the portable ZIP file
-          2. Extract FastDLX.exe to any folder
-          3. Run FastDLX.exe
+          1. Download `FastDLX.exe`
+          2. Run it - no installation required!
           
           ### Features
           - **Multi-game support**: Counter-Strike: Source, CS:GO, Team Fortress 2, Left 4 Dead 2, Garry's Mod
