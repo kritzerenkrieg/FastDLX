@@ -128,6 +128,22 @@ public partial class MainWindowViewModel : ObservableObject
 
         Status = $"Searching for {SelectedGame.Name}...";
 
+        if (OperatingSystem.IsLinux())
+        {
+            foreach (string steamPath in GetLinuxSteamPaths())
+            {
+                if (TryFindGameInSteamPath(steamPath, SelectedGame, out string? gamePath))
+                {
+                    GameDirectory = gamePath;
+                    Status = $"Auto-detected {SelectedGame.Name} download directory";
+                    return;
+                }
+            }
+
+            Status = $"Could not auto-detect {SelectedGame.Name} directory. Please select manually.";
+            return;
+        }
+
         // Strategy 1: Check Windows Registry for Steam installation path
         string? steamPathFromRegistry = GetSteamPathFromRegistry();
         if (!string.IsNullOrEmpty(steamPathFromRegistry))
@@ -185,6 +201,39 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         Status = $"Could not auto-detect {SelectedGame.Name} directory. Please select manually.";
+    }
+
+    private static System.Collections.Generic.IEnumerable<string> GetLinuxSteamPaths()
+    {
+        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        string dataHome = Environment.GetEnvironmentVariable("XDG_DATA_HOME") is { Length: > 0 } xdg
+            ? xdg
+            : Path.Combine(home, ".local", "share");
+
+        var candidates = new[]
+        {
+            Path.Combine(home, ".steam", "steam"),
+            Path.Combine(home, ".steam", "root"),
+            Path.Combine(dataHome, "Steam"),
+            Path.Combine(home, ".local", "share", "Steam"),
+            // Flatpak
+            Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"),
+            Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", "data", "Steam"),
+            // Snap
+            Path.Combine(home, "snap", "steam", "common", ".local", "share", "Steam")
+        };
+
+        var seen = new System.Collections.Generic.HashSet<string>();
+        foreach (string candidate in candidates)
+        {
+            if (!Directory.Exists(candidate))
+                continue;
+
+            // ~/.steam/* are usually symlinks to the same install; dedupe on the resolved path
+            string resolved = Directory.ResolveLinkTarget(candidate, true)?.FullName ?? candidate;
+            if (seen.Add(resolved))
+                yield return candidate;
+        }
     }
 
     private string? GetSteamPathFromRegistry()
