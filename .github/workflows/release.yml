@@ -48,7 +48,7 @@ jobs:
     - name: Publish single-file executable
       shell: bash
       run: |
-        dotnet publish -c Release -r ${{ matrix.rid }} \
+        dotnet publish FastDLX.csproj -c Release -r ${{ matrix.rid }} \
           --self-contained true \
           -p:Version=${{ steps.get_version.outputs.VERSION }} \
           -p:PublishSingleFile=true \
